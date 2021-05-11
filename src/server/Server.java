@@ -2,7 +2,6 @@ package server;
 
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
@@ -24,12 +23,13 @@ public class Server {
                     @Override
                     public void run() {
                         try {
-                            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+                            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream()); // Поток вывода Для сериализации
                             DataInputStream in = new DataInputStream(socket.getInputStream());
-                            out.writeUTF("Введите имя:");
+                            currentUser.setOos(out); // Сохраняем поток в объект (пользователя)
+                            currentUser.getOos().writeObject("Введите имя:"); // отправляем данные
                             String userName = in.readUTF();
                             currentUser.setUserName(userName);
-                            out.writeUTF(currentUser.getUserName()+" добро пожаловать на сервер!");
+                            currentUser.getOos().writeObject(currentUser.getUserName()+" добро пожаловать на сервер!");
                             sendUserList();
                             while (true){
                                 System.out.println("Ожидаем сообщение от пользователя");
@@ -37,16 +37,14 @@ public class Server {
                                 System.out.println(currentUser.getUserName()+": "+request);
                                 for (User user:users) {
                                     if(currentUser.equals(user)) continue;
-                                    DataOutputStream userOut = new DataOutputStream(user.getSocket().getOutputStream());
-                                    userOut.writeUTF(userName+": "+request);
+                                    user.getOos().writeObject(userName+": "+request);
                                 }
                             }
                         } catch (IOException exception) {
                             users.remove(currentUser);
                             for (User user:users) {
                                 try {
-                                    DataOutputStream userOut = new DataOutputStream(user.getSocket().getOutputStream());
-                                    userOut.writeUTF(currentUser.getUserName()+" покинул чат");
+                                    user.getOos().writeObject(currentUser.getUserName()+" покинул чат");
                                     sendUserList();
                                 } catch (IOException e) {
                                     e.printStackTrace();
@@ -65,14 +63,12 @@ public class Server {
 
     private static void sendUserList(){
         try {
-            String userList = "**userlist**";
-
+            ArrayList<String> usersName = new ArrayList<String>();
             for (User user:users) {
-                userList += "//"+user.getUserName();
+                usersName.add(user.getUserName()); // Перебираем пользователей и записываем их имена в список
             }
             for (User user:users) {
-                DataOutputStream out = new DataOutputStream(user.getSocket().getOutputStream());
-                out.writeUTF(userList);
+                user.getOos().writeObject(usersName); // Отправляем ArrayList клиенту
             }
         } catch (IOException e) {
             e.printStackTrace();
