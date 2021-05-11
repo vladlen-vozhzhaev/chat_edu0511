@@ -4,13 +4,14 @@ package server;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
 public class Server {
+    static ArrayList<User> users = new ArrayList<>();
     public static void main(String[] args) {
-        ArrayList<User> users = new ArrayList<>();
         System.out.println("Сервер запущен");
         try {
             ServerSocket serverSocket = new ServerSocket(8188);
@@ -29,6 +30,7 @@ public class Server {
                             String userName = in.readUTF();
                             currentUser.setUserName(userName);
                             out.writeUTF(currentUser.getUserName()+" добро пожаловать на сервер!");
+                            sendUserList();
                             while (true){
                                 System.out.println("Ожидаем сообщение от пользователя");
                                 String request = in.readUTF(); // Ожидаем сообщение от клиента
@@ -45,6 +47,7 @@ public class Server {
                                 try {
                                     DataOutputStream userOut = new DataOutputStream(user.getSocket().getOutputStream());
                                     userOut.writeUTF(currentUser.getUserName()+" покинул чат");
+                                    sendUserList();
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
@@ -57,6 +60,22 @@ public class Server {
             }
         } catch (IOException exception) {
             exception.printStackTrace();
+        }
+    }
+
+    private static void sendUserList(){
+        try {
+            String userList = "**userlist**";
+
+            for (User user:users) {
+                userList += "//"+user.getUserName();
+            }
+            for (User user:users) {
+                DataOutputStream out = new DataOutputStream(user.getSocket().getOutputStream());
+                out.writeUTF(userList);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

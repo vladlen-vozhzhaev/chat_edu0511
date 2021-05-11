@@ -1,9 +1,10 @@
 package server;
 
+import java.io.Serializable;
 import java.net.Socket;
 import java.util.UUID;
 
-public class User{
+public class User implements Serializable {
     private Socket socket;
     private String userName;
     private UUID uuid;
